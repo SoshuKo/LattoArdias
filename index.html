@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LAT → ARDIAS 変換</title>
+  <style>
+    @font-face {
+      font-family: "Ardias";
+      src: url("Ardias-Regular.ttf") format("truetype");
+      font-display: swap;
+    }
+    body {
+      background: #0b0c10;
+      color: #e8eaed;
+      font-family: system-ui, "Noto Sans JP", sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 { margin-bottom: 0.2em; }
+    .sub { color: #8a8f98; margin-bottom: 20px; }
+    textarea, .out {
+      width: 100%;
+      min-height: 200px;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #232634;
+      background: #12131a;
+      color: #e8eaed;
+      font-size: 16px;
+      line-height: 1.6;
+      resize: vertical;
+    }
+    .out {
+      font-family: "Ardias", "Noto Sans", sans-serif;
+      white-space: pre-wrap;
+    }
+    button {
+      margin: 6px 8px 20px 0;
+      padding: 8px 14px;
+      background: #1b1e27;
+      color: #e8eaed;
+      border: 1px solid #232634;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover { border-color: #7aa2f7; }
+  </style>
+</head>
+<body>
+  <h1>LAT → ARDIAS 変換</h1>
+  <p class="sub">二重音字（sh, ch, pf, gh）を優先して置換し、Ardiasフォントで表示します。</p>
+
+  <textarea id="input" placeholder="ここにLATテキストを入力..."></textarea><br>
+  <button id="convert">変換</button>
+  <button id="copy">コピー</button>
+
+  <h3>出力（ARDIAS）</h3>
+  <div id="output" class="out"></div>
+
+  <script>
+    const digraphs = [
+      ["sh","ʃ"], ["ch","č"], ["pf","ɸ"], ["gh","ɣ"]
+    ];
+    const singles = [
+      ["p","p"], ["b","b"], ["m","m"], ["f","f"], ["v","v"], ["w","w"],
+      ["t","t"], ["d","d"], ["n","n"], ["s","s"], ["z","z"], ["c","c"],
+      ["r","r"], ["l","l"], ["k","k"], ["g","g"], ["h","h"], ["x","x"],
+      ["j","j"], ["q","q"], ["y","y"], ["'","ʔ"],
+      ["a","a"], ["e","e"], ["i","i"], ["o","o"], ["u","u"],
+      ["ā","ā"], ["ē","ē"], ["ī","ī"], ["ō","ō"], ["ū","ū"],
+      ["á","á"], ["é","é"], ["í","í"], ["ó","ó"], ["ú","ú"],
+      ["æ","æ"], ["ø","ø"], [",",","], [".","."]
+    ];
+
+    function withCaps(pairs) {
+      const res = [];
+      for (const [lat, ar] of pairs) {
+        res.push([lat, ar]);
+        res.push([lat.toUpperCase(), ar]);
+        if (lat.length > 1)
+          res.push([lat[0].toUpperCase() + lat.slice(1), ar]);
+      }
+      return res;
+    }
+
+    const mapping = [...withCaps(digraphs), ...withCaps(singles)];
+    const regex = new RegExp(mapping.map(([k]) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "g");
+    const map = new Map(mapping);
+
+    function transliterate(txt) {
+      return txt.replace(regex, m => map.get(m) || m);
+    }
+
+    const input = document.getElementById("input");
+    const output = document.getElementById("output");
+
+    document.getElementById("convert").onclick = () => {
+      output.textContent = transliterate(input.value);
+    };
+
+    document.getElementById("copy").onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(output.textContent);
+        alert("コピーしました！");
+      } catch {
+        alert("コピーに失敗しました");
+      }
+    };
+  </script>
+</body>
+</html>
